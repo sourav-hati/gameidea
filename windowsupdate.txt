@@ -1,0 +1,89 @@
+powershell script for windows patch and office security update 
+ChatGPT said:
+Here’s a PowerShell script to update Windows patches and Office security updates:
+
+Features:
+Checks for available updates
+Installs Windows and Microsoft Office security updates
+Generates a log file
+Works for Windows Server & Client versions
+PowerShell Script
+powershell
+Copy
+Edit
+# Define log file path
+$logFile = "C:\WindowsUpdateLog.txt"
+
+# Enable Windows Update Service if disabled
+Write-Output "Checking Windows Update Service..." | Tee-Object -FilePath $logFile -Append
+$wuaService = Get-Service -Name wuauserv
+if ($wuaService.StartType -eq 'Disabled') {
+    Set-Service -Name wuauserv -StartupType Manual
+    Start-Service -Name wuauserv
+    Write-Output "Windows Update Service enabled and started." | Tee-Object -FilePath $logFile -Append
+}
+
+# Scan for available updates
+Write-Output "Scanning for Windows and Office updates..." | Tee-Object -FilePath $logFile -Append
+$searcher = New-Object -ComObject Microsoft.Update.Searcher
+$searchResult = $searcher.Search("IsInstalled=0 and Type='Software' and CategoryIDs contains 'E6CF1350-C01B-414D-A61F-263D14D133B4'")
+
+if ($searchResult.Updates.Count -eq 0) {
+    Write-Output "No updates found." | Tee-Object -FilePath $logFile -Append
+    Exit
+}
+
+# List updates to be installed
+Write-Output "Updates found:" | Tee-Object -FilePath $logFile -Append
+$searchResult.Updates | ForEach-Object {
+    Write-Output $_.Title | Tee-Object -FilePath $logFile -Append
+}
+
+# Install updates
+Write-Output "Installing updates..." | Tee-Object -FilePath $logFile -Append
+$session = New-Object -ComObject Microsoft.Update.Session
+$updateInstaller = $session.CreateUpdateInstaller()
+$updateCollection = New-Object -ComObject Microsoft.Update.UpdateColl
+
+foreach ($update in $searchResult.Updates) {
+    $updateCollection.Add($update) | Out-Null
+}
+
+$updateInstaller.Updates = $updateCollection
+$result = $updateInstaller.Install()
+
+# Check installation result
+if ($result.ResultCode -eq 2) {
+    Write-Output "Updates installed successfully!" | Tee-Object -FilePath $logFile -Append
+} else {
+    Write-Output "Some updates failed or required a reboot." | Tee-Object -FilePath $logFile -Append
+}
+
+# Restart prompt if needed
+if ($result.RebootRequired) {
+    Write-Output "Reboot is required to complete the update process." | Tee-Object -FilePath $logFile -Append
+    shutdown /r /t 60  # Restarts the system in 60 seconds
+}
+How to Use:
+Save the script as WindowsUpdate.ps1
+Open PowerShell as Administrator
+Run:
+powershell
+Copy
+Edit
+Set-ExecutionPolicy Bypass -Scope Process -Force
+.\WindowsUpdate.ps1
+What It Does:
+✔ Enables Windows Update service (if disabled)
+✔ Scans for available security updates
+✔ Installs Windows & Office updates
+✔ Logs the process to C:\WindowsUpdateLog.txt
+✔ Prompts for reboot if needed
+
+Let me know if you need modifications! 🚀
+
+
+
+
+
+
