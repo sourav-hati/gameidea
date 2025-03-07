@@ -82,3 +82,65 @@ C:\logs\file3.xml
 ✔ **Handles encoding errors gracefully.**  
 
 Let me know if you need modifications! 🚀
+
+
+
+🔹 Steps to Run Python in PowerShell ISE
+1️⃣ Ensure Python is Installed
+
+Open PowerShell and run:
+powershell
+Copy
+Edit
+python --version
+If Python is not installed, download it from python.org and install it.
+2️⃣ Open PowerShell ISE
+
+Press Win + R, type powershell_ise, and hit Enter.
+3️⃣ Write or Open Your Python Script
+
+Either write your script inside PowerShell ISE or open an existing one:
+powershell
+Copy
+Edit
+# Open a Python script
+notepad "C:\path\to\your_script.py"
+4️⃣ Run Python Script from PowerShell ISE
+
+Use the following command inside PowerShell ISE:
+powershell
+Copy
+Edit
+python "C:\path\to\your_script.py"
+Example:
+powershell
+Copy
+Edit
+python "C:\Users\YourName\Documents\search_script.py"
+🔹 Alternative: Run Python Inside PowerShell ISE Terminal
+If you want an interactive Python shell, type:
+
+powershell
+Copy
+Edit
+python
+This will launch Python inside PowerShell, and you can execute commands directly.
+
+🔹 Troubleshooting
+✔ Python Not Recognized?
+
+Try using the full path to Python:
+powershell
+Copy
+Edit
+"C:\Python39\python.exe" "C:\path\to\your_script.py"
+Or add Python to the system PATH:
+powershell
+Copy
+Edit
+[System.Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Python39", [System.EnvironmentVariableTarget]::Machine)
+✔ Script Fails to Run?
+
+Ensure the script file is in UTF-8 encoding (especially when handling text files).
+If the script requires admin privileges, run PowerShell ISE as Administrator.
+
