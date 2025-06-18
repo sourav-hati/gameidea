@@ -294,5 +294,106 @@ while ($true) {
     # Wait before the next round
     Start-Sleep -Seconds 60
 }
+----------------------------------------------------------------------------------------------------------------------------------------------
+# --- Configuration ---
 
+# List of URLs to monitor
+$urls = @(
+    "https://example.com",
+    "https://www.youtube.com/",
+    "https://www.google.com/"
+)
+
+# Email settings
+$smtpServer = "smtp.gmail.com"
+$smtpPort = 587
+$from = "yourname@gmail.com"
+$to = "admin@example.com"
+$subjectPrefix = "URL Monitor Alert:"
+$username = "yourname@gmail.com"
+$password = "your_app_password"
+
+# Convert to secure credential
+$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+
+# Setup log directory
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$logDir = "C:\Logs"
+if (!(Test-Path -Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir -Force
+}
+
+# Create a single log file for this run
+$logFile = "$logDir\url_monitor_$timestamp.txt"
+
+# Logging function (single log file for all URLs)
+function Write-Log {
+    param (
+        [string]$url,
+        [string]$message
+    )
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$ts [$url] $message" | Out-File -FilePath $logFile -Append
+    Write-Host "$ts - $url - $message"
+}
+
+# Email alert function
+function Send-Alert {
+    param (
+        [string]$url,
+        [string]$body,
+        [string]$subject = "$subjectPrefix $url is DOWN"
+    )
+
+    Send-MailMessage -From $from -To $to -Subject $subject -Body $body `
+        -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $cred
+}
+
+# Initialize alert flags per URL
+$emailSentStatus = @{ }
+foreach ($url in $urls) {
+    $emailSentStatus[$url] = $false
+}
+
+# --- Monitoring Loop ---
+while ($true) {
+    foreach ($url in $urls) {
+        try {
+            $startTime = Get-Date
+            $response = Invoke-WebRequest -Uri $url -TimeoutSec 10 -UseBasicParsing
+            $endTime = Get-Date
+            $elapsed = ($endTime - $startTime).TotalMilliseconds
+
+            if ($response.StatusCode -eq 200) {
+                Write-Log -url $url -message "SUCCESS: $url is UP - StatusCode: 200 - ResponseTime: ${elapsed}ms"
+                if ($emailSentStatus[$url]) {
+                    Write-Log -url $url -message "INFO: Site recovered. Resetting alert flag."
+                    $emailSentStatus[$url] = $false
+                }
+            }
+            else {
+                $msg = "WARNING: $url returned StatusCode: $($response.StatusCode)"
+                Write-Log -url $url -message $msg
+                if (-not $emailSentStatus[$url]) {
+                    Send-Alert -url $url -body $msg
+                    Write-Log -url $url -message "ALERT: Email sent."
+                    $emailSentStatus[$url] = $true
+                }
+            }
+        }
+        catch {
+            $errMsg = "ERROR: Unable to reach $url - $_"
+            Write-Log -url $url -message $errMsg
+            if (-not $emailSentStatus[$url]) {
+                Send-Alert -url $url -body $errMsg
+                Write-Log -url $url -message "ALERT: Email sent for unreachable URL."
+                $emailSentStatus[$url] = $true
+            }
+        }
+    }
+
+    # Wait before the next round
+    Start-Sleep -Seconds 60
+}
 
